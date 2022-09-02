@@ -59,11 +59,6 @@ class Nmap
         $this->executor   = $executor ?: new ProcessExecutor();
         $this->outputFile = $outputFile ?: tempnam(sys_get_temp_dir(), 'nmap-scan-output.xml');
         $this->executable = $executable;
-
-        // If executor returns anything else than 0 (success exit code), throw an exeption since $executable is not executable.
-        if ($this->executor->execute($this->executable.' -h') !== 0) {
-            throw new \InvalidArgumentException(sprintf('`%s` is not executable.', $this->executable));
-        }
     }
 
     /**
@@ -74,45 +69,38 @@ class Nmap
      */
     public function scan(array $targets, array $ports = array())
     {
-        $targets = implode(' ', array_map(function ($target) {
-            return $target;
-        }, $targets));
+        $command = [$this->executable];
 
-        $options = array();
         if (true === $this->enableOsDetection) {
-            $options[] = '-O';
+            $command[] = '-O';
         }
 
         if (true === $this->enableServiceInfo) {
-            $options[] = '-sV';
+            $command[] = '-sV';
         }
 
         if (true === $this->enableVerbose) {
-            $options[] = '-v';
+            $command[] = '-v';
         }
 
         if (true === $this->disablePortScan) {
-            $options[] = '-sn';
+            $command[] = '-sn';
         } elseif (!empty($ports)) {
-            $options[] = '-p '.implode(',', $ports);
+            $command[] = '-p '.implode(',', $ports);
         }
 
         if (true === $this->disableReverseDNS) {
-            $options[] = '-n';
+            $command[] = '-n';
         }
 
         if (true == $this->treatHostsAsOnline) {
-            $options[] = '-Pn';
+            $command[] = '-Pn';
         }
+        
+        $command = array_merge($command,$targets);
 
-        $options[] = '-oX';
-        $command   = sprintf(
-            "%s %s '%s' '%s'",
-            $this->executable,
-            implode(' ', $options),
-            $this->outputFile,
-            $targets
-        );
+        $command[] = '-oX';
+        $command[] = $this->outputFile;
 
         $this->executor->execute($command, $this->timeout);
 
