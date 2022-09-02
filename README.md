@@ -89,7 +89,7 @@ The recommended way to install nmap is through
 
 Or:
 
-`composer require cultrix/php_nmap`
+`composer require cultrix/nmap`
 
 License
 -------
